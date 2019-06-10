@@ -1,0 +1,175 @@
+CREATE TABLE `clientes` (
+  `Nombre` varchar(250) DEFAULT NULL,
+  `A_paterno` varchar(250) DEFAULT NULL,
+  `A_materno` varchar(250) DEFAULT NULL,
+  `Telefono` varchar(15) DEFAULT NULL,
+  `Cliente_sap` int(11) NOT NULL,
+  `Fecha_creacion` date DEFAULT NULL,
+  `Nombre_fiscal` varchar(250) DEFAULT NULL,
+  `Rfc` varchar(13) DEFAULT NULL,
+  `Contacto` varchar(50) DEFAULT NULL,
+  `Cedild` varchar(20) DEFAULT NULL,
+  `Longitud` float DEFAULT NULL,
+  `Latitud` float DEFAULT NULL,
+  `Contrasena` varchar(40) DEFAULT NULL,
+  `Referencia` varchar(50) DEFAULT NULL,
+  `Foto_local` longtext,
+  PRIMARY KEY (`Cliente_sap`),
+  UNIQUE KEY `Nombre_fiscal` (`Nombre_fiscal`),
+  UNIQUE KEY `Rfc` (`Rfc`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- view
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `itmarts`.`v_cliente` AS select `itmarts`.`clientes`.`Nombre` AS `Nombre`,`itmarts`.`clientes`.`A_paterno` AS `A_paterno`,`itmarts`.`clientes`.`A_materno` AS `A_materno`,`itmarts`.`clientes`.`Telefono` AS `Telefono`,`itmarts`.`clientes`.`Cliente_sap` AS `Cliente_sap`,`itmarts`.`clientes`.`Fecha_creacion` AS `Fecha_creacion`,`itmarts`.`clientes`.`Nombre_fiscal` AS `Nombre_fiscal`,`itmarts`.`clientes`.`Rfc` AS `Rfc`,`itmarts`.`clientes`.`Contacto` AS `Contacto`,`itmarts`.`clientes`.`Cedild` AS `Cedild`,`itmarts`.`clientes`.`Longitud` AS `Longitud`,`itmarts`.`clientes`.`Latitud` AS `Latitud`,`itmarts`.`clientes`.`Contrasena` AS `Contrasena`,`itmarts`.`clientes`.`Referencia` AS `Referencia`,`itmarts`.`clientes`.`Foto_local` AS `Foto_local` from `itmarts`.`clientes`;
+
+-- procedures
+
+DROP PROCEDURE IF EXISTS itmarts.p_ActulizarCliente;
+CREATE PROCEDURE itmarts.`p_ActulizarCliente`(
+IN iNombre VARCHAR(250),
+IN iA_paterno VARCHAR(250),
+IN iA_materno VARCHAR(250),
+IN iTelefono  VARCHAR(15),
+IN iCliente_sap int,
+IN iNombre_fiscal VARCHAR(250),
+IN iRfc VARCHAR(13),
+IN iContacto VARCHAR(50),
+IN iCedild VARCHAR(20),
+IN iLongitud FLOAT,
+IN iLatitud FLOAT,
+IN iContrasena VARCHAR(40),
+IN iReferencia VARCHAR(50),
+IN iFoto_local longtext,
+OUT salida int)
+BEGIN
+	IF (select count(*) from clientes where Cliente_sap = iCliente_sap)>0 THEN
+		IF (select count(*) from clientes where Cliente_sap != iCliente_sap and Nombre_fiscal = iNombre_fiscal) > 0 THEN
+			SET salida = 2; -- 'Nombre fiscal repetido, intente con otro';
+		ELSEIF (select count(*) from clientes where Cliente_sap != iCliente_sap and Rfc = iRfc) > 0 THEN
+			SET salida = 3; -- 'Rfc repetido, intente con otro';
+		ELSE
+			UPDATE clientes set
+				Nombre = iNombre,
+        A_paterno = iA_paterno,
+        A_materno = iA_materno,
+        Telefono = iTelefono,
+        Cliente_sap = iCliente_sap,
+        Nombre_fiscal = iNombre_fiscal,
+        Rfc = iRfc,
+        Contacto = iContacto,
+        Cedild = iCedild,
+        Longitud = iLongitud,
+        Latitud = iLatitud,
+        Contrasena = iContrasena,
+        Referencia = iReferencia,
+        Foto_local = iFoto_local
+			WHERE Cliente_sap = iCliente_sap;
+			SET salida = 0; -- 'Ok';
+		END IF;
+    ELSE
+		SET salida = 4; -- 'No existe cliente a actualizar';
+    END IF;
+END;
+
+
+DROP PROCEDURE IF EXISTS itmarts.p_AgregarCliente;
+CREATE PROCEDURE itmarts.`p_AgregarCliente`(
+IN iNombre VARCHAR(250),
+IN iA_paterno VARCHAR(250),
+IN iA_materno VARCHAR(250),
+IN iTelefono  VARCHAR(15),
+IN iCliente_sap int,
+IN iFecha_creacion DATE,
+IN iNombre_fiscal VARCHAR(250),
+IN iRfc VARCHAR(13),
+IN iContacto VARCHAR(50),
+IN iCedild VARCHAR(20),
+IN iLongitud FLOAT,
+IN iLatitud FLOAT,
+IN iContrasena VARCHAR(40),
+IN iReferencia VARCHAR(50),
+IN iFoto_local longtext,
+OUT salida int)
+BEGIN
+	
+		IF (select count(*) from clientes where Cliente_sap = iCliente_sap) > 0 THEN
+			SET salida = 1; -- 'Id de cliente sap repetido, intente con otro';
+            
+		ELSEIF (select count(*) from clientes where Nombre_fiscal = iNombre_fiscal) > 0 THEN
+			SET salida = 2; -- 'Nombre fiscal repetido, intente con otro';
+            
+		ELSEIF (select count(*) from clientes where Rfc = iRfc) > 0 THEN
+			SET salida = 3; -- 'Rfc repetido, intente con otro';
+      
+    ELSE
+			INSERT 
+				INTO clientes 	
+					VALUES 
+						(iNombre, iA_paterno, iA_materno, iTelefono, iCliente_sap, iFecha_creacion, iNombre_fiscal, iRfc, iContacto, iCedild, iLongitud, iLatitud, iContrasena, iReferencia, iFoto_local);
+			SET salida = 0; -- 'Ok';
+            
+        END IF;
+END;
+
+
+
+DROP PROCEDURE IF EXISTS itmarts.p_EliminarCliente;
+CREATE PROCEDURE itmarts.`p_EliminarCliente`(
+IN iCliente_sap int,
+OUT salida int)
+BEGIN
+	IF (select count(*) from clientes where Cliente_sap = iCliente_sap)> 0 THEN
+      DELETE 
+			FROM clientes 
+				Where 
+					Cliente_sap = iCliente_sap;
+		SET salida = 0; -- 'Ok';
+   ELSE
+		SET salida = 4; -- 'No existe cliente a eliminar';
+   END IF;
+END;
+
+
+
+DROP PROCEDURE IF EXISTS itmarts.p_Sesion;
+CREATE PROCEDURE itmarts.`p_Sesion`(
+IN iCliente_sap int,
+IN iContrasena VARCHAR(40))
+BEGIN
+  IF (select count(*) from v_cliente where Cliente_sap = iCliente_sap)> 0 THEN
+    IF (select Contrasena from v_cliente where Cliente_sap = iCliente_sap and Contrasena = iContrasena) != "" THEN
+      select * from v_cliente where Cliente_sap = iCliente_sap; -- Ok
+    -- ELSE
+      -- SET salida = 5; -- Contrasena incorrecta
+    END IF;
+  -- ELSE
+    -- SET salida = 4; -- No existe este cliente
+  END IF;
+END;
+
+
+DROP PROCEDURE IF EXISTS itmarts.p_vCliente;
+CREATE PROCEDURE itmarts.`p_vCliente`(
+IN iCliente_sap int)
+BEGIN
+    SELECT *  
+    FROM clientes 
+    Where 
+    Cliente_sap = iCliente_sap;
+END;
+
+
+
+DROP PROCEDURE IF EXISTS itmarts.p_VerClientes;
+CREATE PROCEDURE itmarts.`p_VerClientes`(
+IN iCliente_sap int,
+IN opcion int)
+BEGIN
+  IF opcion = 1 THEN
+    SELECT Cliente_sap, Nombre, A_paterno, A_materno, Cedild  FROM v_cliente;
+  END IF;
+  IF opcion = 2 THEN
+    SELECT * FROM v_cliente where Cliente_sap = iCliente_sap;
+  END IF;
+END;
